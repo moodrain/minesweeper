@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineSweeper</title>
+    <style>
+        .map-row {
+            height: 42px;
+        }
+        
+        .map-item {
+            display: inline-block;
+            background: lightblue;
+            margin: 1px 1px 0 0;
+            text-align: center;
+            height: 40px;
+            width: 40px;
+        }
+        
+        .map-item p {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            position: absolute;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="map-row" v-for="(row, x) in map" :key="x" :style="rowStyle()">
+            <div class="map-item" :style="itemStyle(x, y)" v-for="(item, y) in row" :key="y" @click="itemClick(x, y)" @click.right.prevent="itemRightClick(x, y)">
+                <p>{{ map[x][y].num }}</p>
+            </div>
+        </div>
+    </div>
+    <script src="https://s1.moodrain.cn/lib/rium/index.js"></script>
+    <script src="https://s1.moodrain.cn/lib/vue/index.js"></script>
+    <script>
+        let vue = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    rowCount: 4,
+                    colCount: 4,
+                    bombCount: 4,
+                    map: [],
+                    bombs: [],
+                    end: false,
+                }
+            },
+            methods: {
+                init() {
+                    let rows = []
+                    for (let i = 0; i < this.rowCount; i++) {
+                        let row = []
+                        for (let j = 0; j < this.colCount; j++) {
+                            row.push({
+                                num: null,
+                                safe: false,
+                                bomb: false,
+                                mark: false,
+                            })
+                        }
+                        rows.push(row)
+                    }
+                    this.map = rows
+                    for (let i = 0; i < this.bombCount; i++) {
+                        let x = getRandomInt(this.rowCount - 1)
+                        let y = getRandomInt(this.colCount - 1)
+                        let exists = this.bombs.find(b => b.x == x && b.y == y)
+                        if (exists) {
+                            i--
+                        } else {
+                            this.map[x][y].bomb = true
+                            this.bombs.push({
+                                x,
+                                y
+                            })
+                        }
+                    }
+                },
+                itemClick(x, y) {
+                    if (this.end) {
+                        return
+                    }
+                    let item = this.map[x][y]
+                    if (item.bomb) {
+                        alert('Bomb!!')
+                        this.end = true
+                        return
+                    }
+                    item.safe = true
+                    let bombs = this.bombs.filter(b => {
+                        return Math.abs(b.x - x) < 2 && Math.abs(b.y - y) < 2
+                    })
+                    item.num = bombs.length > 0 ? bombs.length : null
+                    let safeCount = 0
+                    this.map.forEach(row => row.forEach(i => {
+                        if (i.safe) {
+                            safeCount++
+                        }
+                    }))
+                    if (safeCount + this.bombCount == this.rowCount * this.colCount) {
+                        alert('You Win!!')
+                        this.end = true
+                    }
+                },
+                itemRightClick(x, y) {
+                    if (this.end) {
+                        return
+                    }
+                    this.map[x][y].mark = !this.map[x][y].mark
+                },
+                itemStyle(x, y) {
+                    let item = this.map[x][y]
+                    let style = {
+                        background: 'lightblue'
+                    }
+                    if (item.mark) {
+                        style.background = 'gray'
+                    }
+                    if (item.safe) {
+                        style.background = 'green'
+                    }
+                    if (this.end && item.bomb) {
+                        style.background = 'red'
+                    }
+                    return style
+                },
+                rowStyle() {
+                    return {
+                        width: this.colCount * 42 + 'px'
+                    }
+                }
+            },
+            mounted() {
+                this.rowCount = $query('x') ?? 4
+                this.colCount = $query('y') ?? 4
+                this.bombCount = $query('b') ?? 4
+                this.init()
+            }
+        })
+
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * Math.floor(max + 1));
+        }
+    </script>
+</body>
+
+</html>
